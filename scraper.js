@@ -20,10 +20,12 @@ function resolveRedirect(url) {
             });
 
             req.on('error', () => resolve(url));
+
             req.setTimeout(10000, () => {
                 req.destroy();
                 resolve(url);
             });
+
         } catch (err) {
             resolve(url);
         }
@@ -60,13 +62,17 @@ async function getCleanUrl(rawUrl) {
  */
 async function startScraping(startUrl, pageLimit) {
 
+    // 🚀 IMPORTANT: No executablePath
     const browser = await puppeteer.launch({
-        headless: true,
+        headless: "new",   // important for Puppeteer v20+
         args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-gpu'
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--no-first-run",
+            "--no-zygote",
+            "--single-process"
         ]
     });
 
@@ -75,7 +81,7 @@ async function startScraping(startUrl, pageLimit) {
     await page.setViewport({ width: 1366, height: 768 });
 
     await page.setUserAgent(
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0 Safari/537.36'
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0 Safari/537.36"
     );
 
     let allCompanies = [];
@@ -83,7 +89,7 @@ async function startScraping(startUrl, pageLimit) {
     let hasNextPage = true;
     let pageCount = 0;
 
-    const maxPages = pageLimit ? parseInt(pageLimit) : 5;
+    const maxPages = pageLimit ? parseInt(pageLimit) : 3; // safer default
 
     console.log(`Starting scraper on: ${startUrl}`);
 
@@ -95,7 +101,7 @@ async function startScraping(startUrl, pageLimit) {
 
             try {
                 await page.goto(currentUrl, {
-                    waitUntil: 'networkidle2',
+                    waitUntil: "networkidle2",
                     timeout: 60000
                 });
             } catch (err) {
@@ -104,36 +110,38 @@ async function startScraping(startUrl, pageLimit) {
             }
 
             try {
-                await page.waitForSelector('.provider-row', { timeout: 15000 });
+                await page.waitForSelector(".provider-row", { timeout: 15000 });
             } catch (err) {
                 console.log("No provider rows found.");
                 break;
             }
 
             const rawCompanies = await page.evaluate(() => {
-                const rows = document.querySelectorAll('.provider-row');
+                const rows = document.querySelectorAll(".provider-row");
                 const data = [];
 
                 rows.forEach(row => {
-                    const nameEl = row.querySelector('.provider__title .provider__title-link');
-                    const websiteEl = row.querySelector('.website-link__item');
-                    const ratingEl = row.querySelector('.sg-rating__number');
-                    const reviewCountEl = row.querySelector('.sg-rating__reviews');
-                    const locationEl = row.querySelector('.location');
-                    const hourlyRateEl = row.querySelector('.hourly-rate');
-                    const minProjectEl = row.querySelector('.min-project-size');
-                    const employeesEl = row.querySelector('.employees-count');
+                    const nameEl = row.querySelector(".provider__title .provider__title-link");
+                    const websiteEl = row.querySelector(".website-link__item");
+                    const ratingEl = row.querySelector(".sg-rating__number");
+                    const reviewCountEl = row.querySelector(".sg-rating__reviews");
+                    const locationEl = row.querySelector(".location");
+                    const hourlyRateEl = row.querySelector(".hourly-rate");
+                    const minProjectEl = row.querySelector(".min-project-size");
+                    const employeesEl = row.querySelector(".employees-count");
 
                     data.push({
-                        name: nameEl ? nameEl.innerText.trim() : 'N/A',
-                        rawWebsite: websiteEl ? websiteEl.href : 'N/A',
-                        rating: ratingEl ? ratingEl.innerText.trim() : 'N/A',
-                        reviewCount: reviewCountEl ? reviewCountEl.innerText.replace(/\s+/g, ' ').trim() : 'N/A',
-                        location: locationEl ? locationEl.innerText.trim() : 'N/A',
-                        hourlyRate: hourlyRateEl ? hourlyRateEl.innerText.trim() : 'N/A',
-                        minProjectSize: minProjectEl ? minProjectEl.innerText.trim() : 'N/A',
-                        employees: employeesEl ? employeesEl.innerText.trim() : 'N/A',
-                        profileUrl: nameEl ? nameEl.href : 'N/A'
+                        name: nameEl ? nameEl.innerText.trim() : "N/A",
+                        rawWebsite: websiteEl ? websiteEl.href : "N/A",
+                        rating: ratingEl ? ratingEl.innerText.trim() : "N/A",
+                        reviewCount: reviewCountEl
+                            ? reviewCountEl.innerText.replace(/\s+/g, " ").trim()
+                            : "N/A",
+                        location: locationEl ? locationEl.innerText.trim() : "N/A",
+                        hourlyRate: hourlyRateEl ? hourlyRateEl.innerText.trim() : "N/A",
+                        minProjectSize: minProjectEl ? minProjectEl.innerText.trim() : "N/A",
+                        employees: employeesEl ? employeesEl.innerText.trim() : "N/A",
+                        profileUrl: nameEl ? nameEl.href : "N/A"
                     });
                 });
 
@@ -142,12 +150,10 @@ async function startScraping(startUrl, pageLimit) {
 
             console.log(`Found ${rawCompanies.length} companies`);
 
-            const processedCompanies = [];
-
             for (const company of rawCompanies) {
                 const cleanWebsite = await getCleanUrl(company.rawWebsite);
 
-                processedCompanies.push({
+                allCompanies.push({
                     name: company.name,
                     website: cleanWebsite,
                     rating: company.rating,
@@ -162,9 +168,7 @@ async function startScraping(startUrl, pageLimit) {
                 await new Promise(r => setTimeout(r, 200));
             }
 
-            allCompanies = allCompanies.concat(processedCompanies);
-
-            const nextButton = await page.$('.pagination .next a');
+            const nextButton = await page.$(".pagination .next a");
 
             if (nextButton && pageCount < maxPages) {
                 currentUrl = await page.evaluate(el => el.href, nextButton);
@@ -180,28 +184,28 @@ async function startScraping(startUrl, pageLimit) {
         await browser.close();
     }
 
-    // Create downloads folder if not exists
-    const downloadsDir = path.join(__dirname, 'downloads');
+    // 📁 Save CSV
+    const downloadsDir = path.join(__dirname, "downloads");
     if (!fs.existsSync(downloadsDir)) {
         fs.mkdirSync(downloadsDir);
     }
 
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     const filename = `clutch_data_${timestamp}.csv`;
     const filePath = path.join(downloadsDir, filename);
 
     const csvWriter = createCsvWriter({
         path: filePath,
         header: [
-            { id: 'name', title: 'Company Name' },
-            { id: 'website', title: 'Website URL' },
-            { id: 'rating', title: 'Rating' },
-            { id: 'reviewCount', title: 'Reviews' },
-            { id: 'location', title: 'Location' },
-            { id: 'hourlyRate', title: 'Hourly Rate' },
-            { id: 'minProjectSize', title: 'Min Project Size' },
-            { id: 'employees', title: 'Employees' },
-            { id: 'profileUrl', title: 'Clutch Profile' }
+            { id: "name", title: "Company Name" },
+            { id: "website", title: "Website URL" },
+            { id: "rating", title: "Rating" },
+            { id: "reviewCount", title: "Reviews" },
+            { id: "location", title: "Location" },
+            { id: "hourlyRate", title: "Hourly Rate" },
+            { id: "minProjectSize", title: "Min Project Size" },
+            { id: "employees", title: "Employees" },
+            { id: "profileUrl", title: "Clutch Profile" }
         ]
     });
 
