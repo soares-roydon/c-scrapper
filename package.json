@@ -4,12 +4,12 @@
   "description": "",
   "main": "server.js",
   "type": "commonjs",
-  "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
-  },
   "engines": {
     "node": "18.x"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "postinstall": "npx puppeteer browsers install chrome"
   },
   "keywords": [],
   "author": "",
