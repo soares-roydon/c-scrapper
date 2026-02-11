@@ -63,19 +63,13 @@ async function getCleanUrl(rawUrl) {
 async function startScraping(startUrl, pageLimit) {
 
     const browser = await puppeteer.launch({
-    executablePath: "/usr/bin/google-chrome-stable", // 👈 important
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
     headless: true,
     args: [
         "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-        "--no-first-run",
-        "--no-zygote",
-        "--single-process"
+        "--disable-setuid-sandbox"
     ]
 });
-
 
     const page = await browser.newPage();
 
@@ -218,4 +212,5 @@ async function startScraping(startUrl, pageLimit) {
 }
 
 module.exports = { startScraping };
+
 
