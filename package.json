@@ -1,18 +1,15 @@
 {
   "name": "c-sc",
   "version": "1.0.0",
-  "description": "",
   "main": "server.js",
   "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "postinstall": "npx puppeteer browsers install chrome"
+  },
   "engines": {
     "node": "18.x"
   },
-  "scripts": {
-    "start": "node server.js"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "cors": "^2.8.6",
     "csv-writer": "^1.6.0",
