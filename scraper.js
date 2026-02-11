@@ -1,4 +1,4 @@
-const puppeteer = require('puppeteer-core');
+const puppeteer = require('puppeteer');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const path = require('path');
 const fs = require('fs');
@@ -6,7 +6,7 @@ const https = require('https');
 const { URL } = require('url');
 
 /**
- * Resolve redirect safely without curl (Render-safe)
+ * Resolve redirect safely (Render-safe)
  */
 function resolveRedirect(url) {
     return new Promise((resolve) => {
@@ -64,10 +64,10 @@ async function startScraping(startUrl, pageLimit) {
         headless: true,
         args: [
             '--no-sandbox',
-            '--disable-setuid-sandbox'
-        ],
-        executablePath:
-            process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium'
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu'
+        ]
     });
 
     const page = await browser.newPage();
@@ -83,7 +83,7 @@ async function startScraping(startUrl, pageLimit) {
     let hasNextPage = true;
     let pageCount = 0;
 
-    const maxPages = pageLimit ? parseInt(pageLimit) : 5; // safer default
+    const maxPages = pageLimit ? parseInt(pageLimit) : 5;
 
     console.log(`Starting scraper on: ${startUrl}`);
 
@@ -104,7 +104,7 @@ async function startScraping(startUrl, pageLimit) {
             }
 
             try {
-                await page.waitForSelector('.provider-row', { timeout: 10000 });
+                await page.waitForSelector('.provider-row', { timeout: 15000 });
             } catch (err) {
                 console.log("No provider rows found.");
                 break;
@@ -148,8 +148,15 @@ async function startScraping(startUrl, pageLimit) {
                 const cleanWebsite = await getCleanUrl(company.rawWebsite);
 
                 processedCompanies.push({
-                    ...company,
-                    website: cleanWebsite
+                    name: company.name,
+                    website: cleanWebsite,
+                    rating: company.rating,
+                    reviewCount: company.reviewCount,
+                    location: company.location,
+                    hourlyRate: company.hourlyRate,
+                    minProjectSize: company.minProjectSize,
+                    employees: company.employees,
+                    profileUrl: company.profileUrl
                 });
 
                 await new Promise(r => setTimeout(r, 200));
