@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clutch.co Scraper</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Clutch Scraper</h1>
+            <p>Extract company data from Clutch.co searches instantly.</p>
+        </header>
+
+        <main>
+            <div class="card">
+                <div class="input-group">
+                    <label for="clutchUrl">Clutch Search URL</label>
+                    <input type="text" id="clutchUrl" placeholder="https://clutch.co/agencies/digital-marketing"
+                        required>
+                </div>
+
+                <div class="input-group">
+                    <label for="pageLimit">Page Limit</label>
+                    <input type="number" id="pageLimit" placeholder="No limit (leave empty for all)" min="1">
+                </div>
+
+                <div class="actions">
+                    <button id="scrapeBtn" class="btn primary">Start Scraping</button>
+                </div>
+
+                <div id="statusArea" class="status hidden">
+                    <div class="spinner"></div>
+                    <span id="statusText">Processing... This may take a few minutes.</span>
+                </div>
+
+                <div id="resultArea" class="result hidden">
+                    <div class="success-icon">✓</div>
+                    <p>Scraping Complete!</p>
+                    <a id="downloadLink" href="#" class="btn secondary" download>Download CSV</a>
+                </div>
+
+                <div id="errorArea" class="error hidden">
+                    <div class="error-icon">⚠</div>
+                    <p id="errorText">An error occurred.</p>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Powered by Puppeteer & Node.js</p>
+        </footer>
+    </div>
+    <script src="app.js"></script>
+</body>
+
+</html>
